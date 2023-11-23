@@ -75,6 +75,7 @@
                     .then((data) => {
                         console.log(data)
                         if (data.status === "success") {
+                            localStorage.setItem("email", email);
                             window.location.href = "/dashboard";
                         } else {
                             alert("User Already Exsist");
