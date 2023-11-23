@@ -62,8 +62,11 @@
                     if (data.status === "success") {
                       localStorage.setItem("email", email);
                       window.location.href = "/dashboard";
-                    } else {
-                    alert("Invalid Credentials");
+                    } else if (data.status === "invalid"){
+                      alert("Invalid Credentials");
+                    }
+                    else{
+                      alert("User Not Found");
                     }
                 });
             });

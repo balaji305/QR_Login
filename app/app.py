@@ -5,6 +5,16 @@ import mysql.connector
 from itsdangerous import URLSafeSerializer
 import random
 import qrcode
+import hashlib
+from dotenv import load_dotenv, dotenv_values
+import base64
+from app import crypt_ops
+
+
+#LOADING ENVIRONMENT VARIABLES
+load_dotenv()
+config = dotenv_values(".env")
+
 
 #CONNECTING TO DATABASE
 mydb = mysql.connector.connect(
@@ -23,20 +33,22 @@ bp=Blueprint('app',__name__)
 def index():
     return render_template('index.html')
 
-
 #ROUTE '/LOGIN'
 @bp.route('/login',methods=['POST','GET'])
 def login():
     if request.method=='POST':
         email=request.form['email']
         password=request.form['password']
+        password=hashlib.md5(password.encode()).hexdigest()
         value=(email,)
         query="""select password from user_details where username = %s"""
         mycursor.execute(query,value)
         for row in mycursor.fetchall():
             f_password=row[0]
             if(f_password==password):
-                return jsonify({'status':'success'})            
+                return jsonify({'status':'success'})
+            else:
+                return jsonify({'status':'invalid'})         
         return jsonify({'status':'fail'})
     else:
         return render_template('login.html')
@@ -47,6 +59,7 @@ def signup():
     if(request.method=='POST'):
         email=request.form['email']
         password=request.form['password']
+        password=hashlib.md5(password.encode()).hexdigest()
         check="""select * from user_details where username = %s"""
         value=(email,)
         mycursor.execute(check,value)
@@ -79,29 +92,44 @@ def createqr():
         for row in mycursor.fetchall():
             password=row[0]
             token=row[1]
-            print("token = " +str(token))
             if(token=="0"):
                 rand_key=random.randint(1,100000)
                 auth_s = URLSafeSerializer("secret"+str(rand_key), "auth")
                 token = auth_s.dumps({"id": email, "name": password})
                 value=(token,email)
-                print("token = " +str(token))
                 query="""update user_details set token = %s where username = %s"""
                 mycursor.execute(query,value)
                 mydb.commit()
-        link="http://localhost:5000/verify?token="+token+"&email="+email
+
+        key=config['AES_KEY']
+        key=base64.urlsafe_b64decode(key)
+        link="http://localhost:5000/verify?"
+        plain_txt="token="+token+"&email="+email
+        plain_txt=plain_txt.encode()
+        
+        cipher_text = crypt_ops.enc(key, plain_txt)
+        cipher_text = base64.urlsafe_b64encode(cipher_text).decode('utf-8')
+        link=link+"msg="+cipher_text
         img = qrcode.make(link)
         img.save("./app/static/"+ token +".png")
-        return jsonify({'token':token,'status':'success'})
+
+        return jsonify({'token':token,'link':link,'status':'success'})
     
 @bp.route('/verify',methods=['POST','GET'])
 def qrlogin():
     if(request.method=="GET"):
-        token=request.args.get('token')
-        email=request.args.get('email')
+        ciphertext=request.args.get('msg').encode()
+        ciphertext=base64.urlsafe_b64decode(ciphertext)
+        key=config['AES_KEY']
+        key=base64.urlsafe_b64decode(key)
+        plain_txt = crypt_ops.dec(key, ciphertext)
+        plain_txt=plain_txt.decode()
+        print("P2=",plain_txt)
+        plain_txt=plain_txt.split('&')
+        token=plain_txt[0].split('=')[1]
+        email=plain_txt[1].split('=')[1]
         value=(token,email)
         query="""select * from user_details where token = %s and username = %s"""
-        print(value)
         mycursor.execute(query,value)
         if(len(mycursor.fetchall()) > 0):
             value=(email,)
@@ -112,10 +140,10 @@ def qrlogin():
 
 @bp.route('/logout',methods=['POST','GET'])
 def logout():
-    if(request.method=="GET"):
+    if(request.method=="POST"):
         email=request.args.get('email')
         value=(email,)
         query="""update user_details set token = '0' and username = %s"""
         mycursor.execute(query,value)
         mydb.commit()
-        return render_template('login.html')
+        return ({'status':'success'})

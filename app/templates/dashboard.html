@@ -10,18 +10,21 @@
     <title>Dashboard</title>
     <script>
       function logout (e){
-        e.preventDefault();
-        console.log("logout");
         localStorage.removeItem("email");
-        // fetch("/logout", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/x-www-form-urlencoded",
-        //   },
-        //   body: new URLSearchParams({
-        //     email: lemail,
-        //   }).toString(),
-        // })
+        fetch("/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            email: lemail,
+          }).toString(),
+        }).then((res) => res.json())
+          .then((data) => {
+            if (data.status === "success") {
+              window.location.href = "/login";
+            }
+          });
       };
     </script>
   </head>
@@ -40,7 +43,7 @@
               </div>
               <div class="col-md-6">
                 <form id="form1">
-                  <button type="submit" class="btn btn-primary" onclick="logout()">Logout</button>
+                  <button type="button" class="btn btn-primary" onclick="logout()">Logout</button>
                 </form>
               </div>
             </div>
@@ -78,24 +81,10 @@
           .then((data) => {
             if (data.status === "success") {
               document.getElementById("qr").src = "./static/"+ data.token +".png";
-              console.log(data.token)
+              console.log(data.link)
             }
           });
       });
-
-      function logout (e){
-        console.log("logout");
-        localStorage.removeItem("email");
-        // fetch("/logout", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/x-www-form-urlencoded",
-        //   },
-        //   body: new URLSearchParams({
-        //     email: lemail,
-        //   }).toString(),
-        // })
-      };
     </script>
   </body>
 </html>
