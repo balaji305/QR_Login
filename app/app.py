@@ -31,7 +31,7 @@ bp=Blueprint('app',__name__)
 #ROUTE '/'
 @bp.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('login.html')
 
 #ROUTE '/LOGIN'
 @bp.route('/login',methods=['POST','GET'])
@@ -85,6 +85,9 @@ def dashboard():
 def createqr():
     if(request.method=="POST"):
         email=request.form['email']
+        print(email)
+        if(email == 'null'):
+            return jsonify({'status':'fail'})
         value=(email,)
         query="""select password,token from user_details where username = %s"""
         mycursor.execute(query,value)

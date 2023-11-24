@@ -82,6 +82,8 @@
             if (data.status === "success") {
               document.getElementById("qr").src = "./static/"+ data.token +".png";
               console.log(data.link)
+            }else{
+              alert("Not Logged In")
             }
           });
       });
