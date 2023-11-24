@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, request, jsonify, render_template
+from flask import Flask, Blueprint, request, jsonify, render_template, redirect, url_for
 import os
 import requests
 import mysql.connector
@@ -74,18 +74,16 @@ def signup():
         return render_template('signup.html')
         
 
-
 #ROUTER '/DASHBOARD'
 @bp.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
-
+#ROUTER '/CREATEQR'
 @bp.route('/createqr',methods=['POST','GET'])
 def createqr():
     if(request.method=="POST"):
         email=request.form['email']
-        print(email)
         if(email == 'null'):
             return jsonify({'status':'fail'})
         value=(email,)
@@ -118,6 +116,7 @@ def createqr():
 
         return jsonify({'token':token,'link':link,'status':'success'})
     
+#ROUTER '/VERIFY'
 @bp.route('/verify',methods=['POST','GET'])
 def qrlogin():
     if(request.method=="GET"):
@@ -127,10 +126,11 @@ def qrlogin():
         key=base64.urlsafe_b64decode(key)
         plain_txt = crypt_ops.dec(key, ciphertext)
         plain_txt=plain_txt.decode()
-        print("P2=",plain_txt)
         plain_txt=plain_txt.split('&')
         token=plain_txt[0].split('=')[1]
         email=plain_txt[1].split('=')[1]
+        while(email[-1] != 'm'):
+            email=email[:-1]
         value=(token,email)
         query="""select * from user_details where token = %s and username = %s"""
         mycursor.execute(query,value)
@@ -139,7 +139,7 @@ def qrlogin():
             query="""update user_details set token = '0' and username = %s"""
             mycursor.execute(query,value)
             mydb.commit()
-            return render_template('dashboard.html',email=email)
+            return redirect(url_for('app.dashboard',email=email))
 
 @bp.route('/logout',methods=['POST','GET'])
 def logout():

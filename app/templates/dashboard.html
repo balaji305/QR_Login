@@ -61,8 +61,18 @@
       const form = document.getElementById("form");
       const form1 = document.getElementById("form1");
       const lemail = localStorage.getItem("email");
+      const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
       if(lemail){
         document.getElementById("name").innerHTML = "Welcome " + lemail;
+      }
+      else if(email){
+        document.getElementById("name").innerHTML = "Welcome " + email;
+        localStorage.setItem("email", email);
+        window.location.href = "/dashboard";
+      }
+      else{
+        window.location.href = "/login";
       }
 
 
@@ -74,7 +84,7 @@
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            email: lemail,
+            email: localStorage.getItem("email"),
           }).toString(),
         })
           .then((res) => res.json())

@@ -636,10 +636,8 @@ def rotate_row_left(row, n=1):
 def add_sub_key(block_grid, key_grid):
     r = []
 
-    # 4 rows in the grid
     for i in range(4):
         r.append([])
-        # 4 values on each row
         for j in range(4):
             r[-1].append(block_grid[i][j] ^ key_grid[i][j])
     return r
@@ -697,53 +695,30 @@ def expand_key(key, rounds):
 
 
 def enc(key, data):
-    # First we need to padd the data with \x00 and break it into blocks of 16
-
     pad = bytes(16 - len(data) % 16)
 
     if len(pad) != 16:
         data += pad
 
     grids = break_in_grids_of_16(data)
-
-    # Now we need to expand the key for the multiple rounds
-
     expanded_key = expand_key(key, 11)
-
-    # And apply the original key to the blocks before start the rounds
-    # For now on we will work with integers
-
     temp_grids = []
-
     round_key = extract_key_for_round(expanded_key, 0)
 
     for grid in grids:
         temp_grids.append(add_sub_key(grid, round_key))
-
     grids = temp_grids
-
-    # Now we can move to the main part of the algorithm
 
     for round in range(1, 10):
         temp_grids = []
-
         for grid in grids:
             sub_bytes_step = [[lookup(val) for val in row] for row in grid]
             shift_rows_step = [rotate_row_left(sub_bytes_step[i], i) for i in range(4)]
             mix_column_step = mix_columns(shift_rows_step)
-
             round_key = extract_key_for_round(expanded_key, round)
-
             add_sub_key_step = add_sub_key(mix_column_step, round_key)
             temp_grids.append(add_sub_key_step)
-
-            # print("Round:", round, "Key:", round_key)
-
-            # print("\nIntermediate step:", add_sub_key_step)
-
         grids = temp_grids
-
-    # A final round without the mix columns
 
     temp_grids = []
     round_key = extract_key_for_round(expanded_key, 10)
@@ -756,8 +731,6 @@ def enc(key, data):
         temp_grids.append(add_sub_key_step)
 
     grids = temp_grids
-
-    # Just need to recriate the data into a single stream before returning
 
     int_stream = []
     for grid in grids:
@@ -774,7 +747,6 @@ def dec(key, data):
     temp_grids = []
     round_key = extract_key_for_round(expanded_key, 10)
 
-    # First we undo the final round
     temp_grids = []
 
     for grid in grids:
@@ -786,7 +758,6 @@ def dec(key, data):
             [reverse_lookup(val) for val in row] for row in shift_rows_step
         ]
         temp_grids.append(sub_bytes_step)
-
     grids = temp_grids
 
     for round in range(9, 0, -1):
@@ -796,7 +767,6 @@ def dec(key, data):
             round_key = extract_key_for_round(expanded_key, round)
             add_sub_key_step = add_sub_key(grid, round_key)
 
-            # Doing the mix columns three times is equal to using the reverse matrix
             mix_column_step = mix_columns(add_sub_key_step)
             mix_column_step = mix_columns(mix_column_step)
             mix_column_step = mix_columns(mix_column_step)
@@ -811,15 +781,12 @@ def dec(key, data):
         grids = temp_grids
         temp_grids = []
 
-    # Reversing the first add sub key
     round_key = extract_key_for_round(expanded_key, 0)
 
     for grid in grids:
         temp_grids.append(add_sub_key(grid, round_key))
-
     grids = temp_grids
 
-    # Just transform the grids back to bytes
     int_stream = []
     for grid in grids:
         for column in range(4):
@@ -839,17 +806,7 @@ def client_program():
 
 
 def derive_aes_key(user_key, salt, key_length=16):
-    # user_key: User-provided key
-    # salt: A random value to make the derived key unique (and more secure)
-    # key_length: Desired key length in bytes (default is 16 bytes for 128 bits)
-
-    # Choose a suitable hash function, e.g., SHA-256
     hash_function = "sha256"
-
-    # Choose the number of iterations (higher is generally more secure but slower)
     iterations = 100000
-
-    # Derive the key using PBKDF2
     derived_key = pbkdf2_hmac(hash_function, user_key, salt, iterations, key_length)
-
     return derived_key
