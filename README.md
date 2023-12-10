@@ -1,43 +1,27 @@
-## Flask Application Creation
+## FLASK APPLICATION GUIDE
 
-1.No need pipenv (virtual environment)
-
-2.Install dependecies
+### 1. Install Flask
 
 ```
-pip install -r requirements.txt
+pip install flask
 ```
 
-3.Running flask Application
+### 2. Run Flask
 
 ```
-flask run -h 0.0.0.0 -p 5000
+flask run
 ```
 
-## Dockerfile
+## ENVIRONMENT VARIABLES
 
-1.Create Dockerfile
-
-2.Build the image
+### 1. .ENV
 
 ```
-docker build -t image_name .
+touch .env
 ```
 
-3.Run the image (container creation)
+### 2. .ENV CONTENT
 
 ```
-docker run -p 5000:5000 --name container_name image_name
-```
-
-4.Tagging the image
-
-```
-docker tag image_name pr454th/image_name:version_no
-```
-
-5.Push to docker hub
-
-```
-docker push pr454th/image_name:version_no
+AES_KEY=YOUR_AES_KEY
 ```

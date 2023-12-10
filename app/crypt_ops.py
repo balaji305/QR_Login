@@ -802,7 +802,6 @@ def client_program():
 
     message = input("Enter the plain text (or 'stop' to exit): ")
     encrypted_msg = enc(key, bytes(message, "utf-8"))
-    print("Sent encrypted text to server:", encrypted_msg)
 
 
 def derive_aes_key(user_key, salt, key_length=16):

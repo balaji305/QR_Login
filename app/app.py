@@ -6,10 +6,10 @@ from itsdangerous import URLSafeSerializer
 import random
 import qrcode
 import hashlib
-from dotenv import load_dotenv, dotenv_values
+from dotenv import dotenv_values, load_dotenv
 import base64
 from app import crypt_ops
-
+import socket
 
 #LOADING ENVIRONMENT VARIABLES
 load_dotenv()
@@ -22,6 +22,7 @@ host="localhost",
 user="admin",
 password="admin",
 database='qrlogin',
+auth_plugin='mysql_native_password'
 )
 mycursor = mydb.cursor()
 
@@ -95,10 +96,11 @@ def createqr():
             token=row[1]
             if(token=="0"):
                 rand_key=random.randint(1,100000)
+                otp=random.randint(100000,999999)
                 auth_s = URLSafeSerializer("secret"+str(rand_key), "auth")
                 token = auth_s.dumps({"id": email, "name": password})
-                value=(token,email)
-                query="""update user_details set token = %s where username = %s"""
+                value=(token,otp,email)
+                query="""update user_details set token = %s, otp = %s where username = %s"""
                 mycursor.execute(query,value)
                 mydb.commit()
 
@@ -129,17 +131,23 @@ def qrlogin():
         plain_txt=plain_txt.split('&')
         token=plain_txt[0].split('=')[1]
         email=plain_txt[1].split('=')[1]
+        hostname = socket.gethostname()
+        IPAddr = socket.gethostbyname(hostname)
+        
+        print("Your Computer Name is:" + hostname)
+        print("Your Computer IP Address is:" + IPAddr)
+
         while(email[-1] != 'm'):
             email=email[:-1]
         value=(token,email)
         query="""select * from user_details where token = %s and username = %s"""
         mycursor.execute(query,value)
         if(len(mycursor.fetchall()) > 0):
-            value=(email,)
-            query="""update user_details set token = '0' and username = %s"""
+            value=(hostname,IPAddr,email)
+            query="""update user_details set token = '0', hostname = %s, hostip = %s where username = %s"""
             mycursor.execute(query,value)
             mydb.commit()
-            return redirect(url_for('app.dashboard',email=email))
+            return redirect(url_for('app.otp',email=email,hostname=hostname,addr=str(IPAddr)))
 
 @bp.route('/logout',methods=['POST','GET'])
 def logout():
@@ -150,3 +158,31 @@ def logout():
         mycursor.execute(query,value)
         mydb.commit()
         return ({'status':'success'})
+
+@bp.route('/otp',methods=['POST','GET'])
+def otp():
+    return render_template('otp.html')
+
+@bp.route('/fetch',methods=['POST','GET'])
+def fetch():
+    email=request.form['email']
+    value=(email,)
+    query="""select hostname,hostip, otp from user_details where username = %s"""
+    mycursor.execute(query,value)
+    for row in mycursor.fetchall():
+        return ({'status':'success', 'hostname':row[0], 'hostip':row[1], 'otp':row[2]})
+
+@bp.route('/verifyotp', methods=['POST','GET'])
+def verifyotp():
+    email=request.form['email']
+    otp=request.form['otp']
+    value=(email,)
+    query="""select otp from user_details where username = %s"""
+    mycursor.execute(query,value)
+    for row in mycursor.fetchall():
+        if(row[0]==otp):
+            query="""update user_details set hostname = NULL, hostip = NULL, otp = NULL where username = %s"""
+            mycursor.execute(query,value)
+            mydb.commit()
+            return ({'status':'success'})
+    return({'status':'failed'})

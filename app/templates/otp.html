@@ -16,22 +16,12 @@
             <h1 class="display-5">Login</h1>
             <form id="form">
               <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
+                <label for="username" class="form-label">Enter OTP from the Owner</label>
                 <input
                   class="form-control"
-                  id="email"
-                  placeholder="Username"
-                  type="email"
-                  required
-                ></input>
-              </div>
-              <div class="mb-3">
-                <label for="username" class="form-label">Password</label>
-                <input
-                  class="form-control"
-                  id="password"
-                  placeholder="Password"
-                  type="password"
+                  id="otp"
+                  placeholder="OTP"
+                  type="text"
                   required
                 ></input>
               </div>
@@ -41,31 +31,29 @@
         </div>
         <script>
             const form = document.getElementById("form");
+            const urlParams = new URLSearchParams(window.location.search);
+            const email = urlParams.get('email');
             form.addEventListener("submit", (e) => {
                 e.preventDefault();
-                const email = document.getElementById("email").value;
-                const password = document.getElementById("password").value;
-                const formData = new URLSearchParams();
-                formData.append("email", email);
-                formData.append("password", password);
-
-                fetch("/login", {
+                const otp = document.getElementById("otp").value;
+                console.log(otp)
+                fetch("/verifyotp", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-                body: formData.toString(),
+                body: new URLSearchParams({
+                    email: email,
+                    otp : otp,
+                }).toString(),
                 })
                 .then((res) => res.json())
                 .then((data) => {
                     if (data.status === "success") {
-                      localStorage.setItem("email", email);
-                      window.location.href = "/dashboard";
-                    } else if (data.status === "invalid"){
-                      alert("Invalid Credentials");
-                    }
-                    else{
-                      alert("User Not Found");
+                        window.location.href="/dashboard?email="+email;
+                    }else{
+                        alert("Wrong OTP")
+                        window.location.href="/login"
                     }
                 });
             });

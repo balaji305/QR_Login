@@ -26,6 +26,25 @@
             }
           });
       };
+
+      function fetchUser (e){
+        fetch("/fetch", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            email: lemail,
+          }).toString(),
+        }).then((res) => res.json())
+          .then((data) => {
+            if (data.status === "success" && data.hostip != null ) {
+              document.getElementById("hostname").innerHTML = "USER NAME : " + data.hostname;
+              document.getElementById("hostip").innerHTML = "USER IP : " + data.hostip;
+              document.getElementById("otp").innerHTML = "OTP : " + data.otp;
+            }
+          });
+      }
     </script>
   </head>
   <body>
@@ -54,6 +73,12 @@
             </form>
             <img class="qr" id="qr"></img>
           </div>
+          <div class="">
+            <button type="button" class="btn btn-primary my-5" onclick="fetchUser()">Verify User Details</button>
+            <h5 id="hostname"></h5>
+            <h5 id="hostip"></h5> 
+            <h5 id="otp"></h5>  
+          </div>
         </div>
       </div>
     </div>
@@ -62,7 +87,7 @@
       const form1 = document.getElementById("form1");
       const lemail = localStorage.getItem("email");
       const urlParams = new URLSearchParams(window.location.search);
-        const email = urlParams.get('email');
+      const email = urlParams.get('email');
       if(lemail){
         document.getElementById("name").innerHTML = "Welcome " + lemail;
       }
